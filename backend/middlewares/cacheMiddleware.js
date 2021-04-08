@@ -1,5 +1,5 @@
 const Word = require("../models/Word");
-const axios = require('axios');
+const axios = require("axios");
 const instance = axios.create({
   baseURL: "https://od-api.oxforddictionaries.com",
   headers: {
@@ -29,7 +29,7 @@ exports.findInCache = async (req, res, next) => {
 
 exports.collectFromExtenalApi = async (req, res, next) => {
   const lang = "en-us";
-  const input = req.body.oxford;
+  const input = req.body.text;
 
   instance
     .get(`/api/v2/entries/${lang}/${input}`)
@@ -39,14 +39,16 @@ exports.collectFromExtenalApi = async (req, res, next) => {
         let addedWord = await new Word(newWord).save();
         req.data = addedWord;
         next();
-      }
-      res
+      }else{
+        return res
         .status(200)
         .json({ success: false, data: {}, message: "Word Cannot be saved" });
+      }
+      
     })
-    .catch((err) =>
-      res
-        .status(200)
-        .json({ success: false, data: {}, message: "Word Cannot be saved" })
-    );
+    .catch((err) => {
+      return res
+        .status(500)
+        .json({ success: false, data: {}, message: "Word Cannot be saved" });
+    });
 };

@@ -5,12 +5,12 @@ import App from "./App";
 import { Provider } from "react-redux";
 import store from "./store";
 import reportWebVitals from "./reportWebVitals";
-import { CssBaseline } from '@material-ui/core';
+
 
 ReactDOM.render(
   <Provider store={store}>
     <App />
-    <CssBaseline/>
+    
   </Provider>,
   document.getElementById("root")
 );

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import {  Typography, Divider } from "@material-ui/core";
+import React, { useEffect, useState,useMemo } from "react";
+import { Typography, Divider } from "@material-ui/core";
 import { WordCard } from "./reuseable/WordCard";
 import { Popup } from "./reuseable/Popup";
 import { WordDetails } from "./WordDetails";
@@ -7,11 +7,15 @@ import { NewWord } from "./NewWord";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { AlertMessage } from "./reuseable/AlertMessage";
 
-import {  makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import InputBase from "@material-ui/core/InputBase";
 import SearchIcon from "@material-ui/icons/Search";
-import Fab from '@material-ui/core/Fab';
-import AddIcon from '@material-ui/icons/Add';
+import Fab from "@material-ui/core/Fab";
+import AddIcon from "@material-ui/icons/Add";
+
+import { useSelector, useDispatch } from "react-redux";
+
+import { searchWords, saveNewWord } from "../actions/wordActions";
 
 const useStyles = makeStyles((theme) => ({
   grow: {
@@ -28,11 +32,11 @@ const useStyles = makeStyles((theme) => ({
   },
   search: {
     position: "relative",
-    margin:"1.5%",
+    margin: "1.5%",
     borderRadius: theme.shape.borderRadius,
-    backgroundColor: '#f9f6f7',
+    backgroundColor: "#f9f6f7",
     "&:hover": {
-      backgroundColor: '#e1f4f3',
+      backgroundColor: "#e1f4f3",
     },
     width: "100%",
     [theme.breakpoints.up("sm")]: {
@@ -75,13 +79,15 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   fab: {
-    position: 'fixed',
+    position: "fixed",
     bottom: theme.spacing(2),
     right: theme.spacing(2),
   },
 }));
 
 export const WordList = () => {
+  let mydata = useSelector((state) => state);
+  const dispatch = useDispatch();
   const classes = useStyles();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(20);
@@ -91,6 +97,9 @@ export const WordList = () => {
   const [openPopup, setOpenPopup] = useState(false);
   const [openPopupForm, setOpenPopupForm] = useState(false);
   const [selecetdData, setSelectedData] = useState(null);
+
+  const [saveLoading, setSaveLoading] = useState(false);
+
 
   //alertBox
   const [open, setOpen] = React.useState(false);
@@ -104,32 +113,32 @@ export const WordList = () => {
   };
 
   useEffect(() => {
+    setData(mydata.wordReducer.words)
+    if(mydata.wordReducer.error != ""){
+      setMessage(mydata.wordReducer.error);
+      setOpen(true);
+    }    
+  }, [mydata]);
+
+  useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
     //call redux action to fetch data
-   
-    // setLoading(true);
-    // let result = await getData(page, limit);
-    // setLoading(false);
-    // if (result.success) {
-    //   setPage(page + 1);
-    //   setHasMore(result.data.has_more);
-    //   setQuotaMax(result.data.quota_max);
-    //   setQuotaRemaining(result.data.quota_remaining);
-    //   let prevQuestions = [...questions];
-    //   Array.prototype.push.apply(prevQuestions, result.data.items);
-    //   setQuestions(prevQuestions);
-    // } else {
-    //   setOpen(true);
-    //   setMessage(result.message);
-    // }
+    dispatch(searchWords(page, limit, ""));
+    setPage(page + 1);
+    setData(mydata.wordReducer.words);
   };
 
-  const addNewWord = (values, resetForm) =>{
-    console.log(values);
-  }
+  const addNewWord = (values, resetForm) => {
+    setSaveLoading(true);
+    dispatch(saveNewWord({ text: values.name }));
+    setSaveLoading(false);
+    setMessage('Saved Successfully');
+    setOpen(true);
+    setOpenPopupForm(false);
+  };
 
   const openInPopup = (data) => {
     setSelectedData(data);
@@ -138,12 +147,15 @@ export const WordList = () => {
 
   const openInPopupForm = () => {
     setOpenPopupForm(true);
-    console.log(openPopupForm)
   };
 
-  const searching = (query) =>{
+  const searching = (query) => {
+    console.log(query);
     //call redux action with query
-  }
+    setPage(0)
+    dispatch(searchWords(page,limit,`text=${query}`));
+
+  };
 
   return (
     <div className={classes.root}>
@@ -152,7 +164,7 @@ export const WordList = () => {
           <SearchIcon />
         </div>
         <InputBase
-        onChange={(e)=>console.log(e.target.value)}
+          onChange={(e) => searching(e.target.value)}
           placeholder="Search…"
           classes={{
             root: classes.inputRoot,
@@ -168,17 +180,24 @@ export const WordList = () => {
         hasMore={hasMore}
         loader={loading && <h4>Loading ... </h4>}
       >
-        {data.map((singleData, index) => (
-          <div key={index} className={classes.singleRow}>
-            <WordCard
-              onClick={() => openInPopup(singleData)}
-              singleData={singleData}
-            />
-            <Divider />
-          </div>
-        ))}
+      {data.map((singleData, index) => (
+        <div key={index}
+        style={{ cursor: "pointer" }}
+        onClick={() => openInPopup(singleData)}
+        >
+          <WordCard
+            singleData={singleData}
+          />
+          <Divider />
+        </div>
+      ))}
       </InfiniteScroll>
-      <Fab color="primary" aria-label="add" className={classes.fab} onClick={() => openInPopupForm()}>
+      <Fab
+        color="primary"
+        aria-label="add"
+        className={classes.fab}
+        onClick={() => openInPopupForm()}
+      >
         <AddIcon />
       </Fab>
       <Popup
@@ -193,10 +212,7 @@ export const WordList = () => {
         openPopup={openPopupForm}
         setOpenPopup={setOpenPopupForm}
       >
-        <NewWord 
-          addNewWord={addNewWord} 
-          loading={loading}
-        />
+        <NewWord addNewWord={addNewWord} loading={saveLoading} />
       </Popup>
       {loading === false && data.length === 0 && (
         <Typography

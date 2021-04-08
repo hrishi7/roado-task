@@ -18,10 +18,10 @@ router.post("/", findInCache, collectFromExtenalApi, saveNewWord);
 
 /**
  * @description   this route is used to add new word
- * @route   GET      /api/v1/words
+ * @route   GET      /api/v1/words/page/:page/limit/:limit
  * @query q
  * @access  Public
  */
-router.get("/", getWords);
+router.get("/page/:page/limit/:limit", getWords);
 
 module.exports = router;
