@@ -1,0 +1,16 @@
+@font-face {
+  font-family: "KumbhSans";
+  src: local("KumbhSans"), url(./fonts/KumbhSans-Bold.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "KumbhSans";
+  font-weight: 900;
+  src: local("KumbhSans"), url(./fonts/KumbhSans-Light.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "KumbhSans";
+  font-weight: 900;
+  src: local("KumbhSans"), url(./fonts/KumbhSans-Regular.ttf) format("truetype");
+}
