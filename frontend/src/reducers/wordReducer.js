@@ -22,7 +22,7 @@ import isEmpty from '../utils/isEmpty'
                 }
                 
             case SEARCH_ALL_WORD:
-                if(action.payload.length == 0){
+                if(action.payload.length === 0){
                     return {
                         ...state,
                         // error:"Server Error while fetching words"

@@ -1,22 +1,25 @@
-import React, { useEffect, useState,useMemo } from "react";
-import { Typography, Divider } from "@material-ui/core";
-import { WordCard } from "./reuseable/WordCard";
-import { Popup } from "./reuseable/Popup";
-import { WordDetails } from "./WordDetails";
-import { NewWord } from "./NewWord";
-import InfiniteScroll from "react-infinite-scroll-component";
-import { AlertMessage } from "./reuseable/AlertMessage";
+import React, { useEffect, useState } from "react";
 
-import { makeStyles } from "@material-ui/core/styles";
-import InputBase from "@material-ui/core/InputBase";
-import SearchIcon from "@material-ui/icons/Search";
 import Fab from "@material-ui/core/Fab";
 import AddIcon from "@material-ui/icons/Add";
+import { makeStyles } from "@material-ui/core/styles";
 
+/**redux related functions */
 import { useSelector, useDispatch } from "react-redux";
-
 import { searchWords, saveNewWord } from "../actions/wordActions";
 
+/** importing Components*/
+import { WordDetails } from "./WordDetails";
+import { NewWord } from "./NewWord";
+
+/**importing all required reuseable components */
+import { Popup } from "./reuseable/Popup";
+import { AlertMessage } from "./reuseable/AlertMessage";
+import { SearchBox } from "./reuseable/SearchBox";
+import { InfiniteList } from "./reuseable/InfiniteList";
+import { NoData } from "./reuseable/NoData";
+
+/**styling component */
 const useStyles = makeStyles((theme) => ({
   grow: {
     flexGrow: 1,
@@ -86,9 +89,12 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export const WordList = () => {
-  let mydata = useSelector((state) => state);
-  const dispatch = useDispatch();
   const classes = useStyles();
+  const dispatch = useDispatch();
+
+  /**getting redux global state */
+  let mydata = useSelector((state) => state);
+
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(20);
   const [data, setData] = useState([]);
@@ -97,11 +103,9 @@ export const WordList = () => {
   const [openPopup, setOpenPopup] = useState(false);
   const [openPopupForm, setOpenPopupForm] = useState(false);
   const [selecetdData, setSelectedData] = useState(null);
-
   const [saveLoading, setSaveLoading] = useState(false);
 
-
-  //alertBox
+  //state for alert message
   const [open, setOpen] = React.useState(false);
   const [message, setMessage] = React.useState("");
 
@@ -113,85 +117,85 @@ export const WordList = () => {
   };
 
   useEffect(() => {
-    setData(mydata.wordReducer.words)
-    if(mydata.wordReducer.error != ""){
+    setData(mydata.wordReducer.words);
+    if (mydata.wordReducer.error !== "") {
       setMessage(mydata.wordReducer.error);
       setOpen(true);
-    }    
+    }
   }, [mydata]);
 
   useEffect(() => {
     fetchData();
   }, []);
 
+  /**
+   * this function is responsible to call redux action and updating the wordlist
+   */
   const fetchData = async () => {
     //call redux action to fetch data
+    setLoading(true);
     dispatch(searchWords(page, limit, ""));
     setPage(page + 1);
     setData(mydata.wordReducer.words);
+    setLoading(false);
   };
 
+  /**
+   * this function is responsible to send added word Asynchronously in backend and fetch the word from oxford api
+   * and cacheing for future usage
+   * @param {Object} values
+   * @param {Function} resetForm
+   */
   const addNewWord = (values, resetForm) => {
     setSaveLoading(true);
     dispatch(saveNewWord({ text: values.name }));
     setSaveLoading(false);
-    setMessage('Saved Successfully');
+    setMessage("Saved Successfully");
     setOpen(true);
     setOpenPopupForm(false);
   };
 
+  /**
+   * This function is responsible for opening popup to show clicked word all the details
+   * @param {Object} data
+   */
   const openInPopup = (data) => {
     setSelectedData(data);
     setOpenPopup(true);
   };
 
+  /**
+   * This function is responsible for opening popup to show form to add a new word
+   *
+   */
   const openInPopupForm = () => {
     setOpenPopupForm(true);
   };
 
+  /**
+   * reseting the page to 0 and calling redux action to fetch words with search query
+   */
   const searching = (query) => {
-    console.log(query);
-    //call redux action with query
-    setPage(0)
-    dispatch(searchWords(page,limit,`text=${query}`));
-
+    setPage(0);
+    dispatch(searchWords(page, limit, `text=${query}`));
   };
 
   return (
     <div className={classes.root}>
-      <div className={classes.search}>
-        <div className={classes.searchIcon}>
-          <SearchIcon />
-        </div>
-        <InputBase
-          onChange={(e) => searching(e.target.value)}
-          placeholder="Search…"
-          classes={{
-            root: classes.inputRoot,
-            input: classes.inputInput,
-          }}
-          inputProps={{ "aria-label": "search" }}
-        />
-      </div>
-
-      <InfiniteScroll
-        dataLength={data.length}
-        next={fetchData}
+      {/* searching component start */}
+      <SearchBox searching={searching} />
+      {/* searching component end */}
+      {/* infinite list component start */}
+      <InfiniteList
+        openInPopup={openInPopup}
+        data={data}
+        fetchData={fetchData}
         hasMore={hasMore}
-        loader={loading && <h4>Loading ... </h4>}
-      >
-      {data.map((singleData, index) => (
-        <div key={index}
-        style={{ cursor: "pointer" }}
-        onClick={() => openInPopup(singleData)}
-        >
-          <WordCard
-            singleData={singleData}
-          />
-          <Divider />
-        </div>
-      ))}
-      </InfiniteScroll>
+        loading={loading}
+      />
+      {/* infinite list component end */}
+
+      {/* Floating Button For Adding new Word start */}
       <Fab
         color="primary"
         aria-label="add"
@@ -200,6 +204,9 @@ export const WordList = () => {
       >
         <AddIcon />
       </Fab>
+      {/* Floating Button For Adding new Word end */}
+      {/* Pop up to open Word Detail Component start */}
+
       <Popup
         title="Word Details"
         openPopup={openPopup}
@@ -207,6 +214,9 @@ export const WordList = () => {
       >
         <WordDetails word={selecetdData} />
       </Popup>
+      {/* Pop up to open Word Detail Component end */}
+      {/* Pop up to open add word form Component start */}
+
       <Popup
         title="Add Word"
         openPopup={openPopupForm}
@@ -214,16 +224,12 @@ export const WordList = () => {
       >
         <NewWord addNewWord={addNewWord} loading={saveLoading} />
       </Popup>
-      {loading === false && data.length === 0 && (
-        <Typography
-          variant="subtitle1"
-          gutterBottom
-          style={{ textAlign: "center" }}
-        >
-          No Data Available!
-        </Typography>
-      )}
+      {/* Pop up to open add word form Component start */}
+
+      {/* Nodata & AlertMessage Component start */}
+      <NoData />
       <AlertMessage open={open} handleClose={handleClose} message={message} />
+      {/* Nodata & AlertMessage Component end */}
     </div>
   );
 };
